@@ -2,5 +2,6 @@
 C:\Users\sofma\source\repos\texteditor2\program\program.cpp(137,34): warning C4244: '=': conversion from '__int64' to 'int', possible loss of data
 C:\Users\sofma\source\repos\texteditor2\program\program.cpp(160,50): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
 C:\Users\sofma\source\repos\texteditor2\program\program.cpp(240,34): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\sofma\source\repos\texteditor2\program\program.cpp(425,1): warning C4326: return type of 'main' should be 'int' instead of 'void'
+C:\Users\sofma\source\repos\texteditor2\program\program.cpp(318,27): warning C4267: '+=': conversion from 'size_t' to 'int', possible loss of data
+C:\Users\sofma\source\repos\texteditor2\program\program.cpp(518,1): warning C4326: return type of 'main' should be 'int' instead of 'void'
   program.vcxproj -> C:\Users\sofma\source\repos\texteditor2\program\x64\Debug\program.exe

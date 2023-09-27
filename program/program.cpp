@@ -17,7 +17,7 @@ class LinkedList
 public:
     Node* head;
 
-    void add_line(const char* l)
+    void addLine(const char* l)
     {
         // create a new node for the input line
         Node* newNode = new Node;
@@ -98,7 +98,7 @@ public:
 
     }
 
-    void start_new_line()
+    void startNewLine()
     {
         Node* newNode = new Node;
         newNode->next = nullptr;
@@ -122,7 +122,7 @@ public:
         current = newNode;
     }
 
-    void search_text(const char* search)
+    void searchText(const char* search)
     {
         Node* current = head;
         int lineCount = 1;
@@ -151,7 +151,7 @@ public:
         }
     }
 
-    char* string_to_print() {
+    char* stringPrint() {
         Node* current = head;
         int totalLength = 0;
 
@@ -187,7 +187,7 @@ public:
         return result;
     }
 
-    void insert_text(int lineIndex, int symbolIndex, const char* text)
+    void insertText(int lineIndex, int symbolIndex, const char* text)
     {
         if (lineIndex < 1 || symbolIndex < 0 || symbolIndex > 79)
         {
@@ -264,6 +264,74 @@ public:
         }
         head = nullptr;
     }
+
+    void replace(int lineIndex, int symbolIndex, const char* text) {
+
+        if (lineIndex < 1 || symbolIndex < 0 || symbolIndex > 79)
+        {
+            printf("> invalid line or index\n");
+            return;
+        }
+
+        Node* current = head;
+        int currentLine = 1;
+
+        while (current != nullptr && currentLine < lineIndex)
+        {
+            current = current->next;
+            currentLine++;
+        }
+
+        if (current == nullptr)
+        {
+            printf("> line not found\n");
+            return;
+        }
+
+        int length = current->length;
+
+        if (symbolIndex > length)
+        {
+            printf("> index out of range\n");
+            return;
+        }
+
+        char newValue[80];
+        int newIndex = 0;
+        int oldIndex = 0;
+
+        while (oldIndex < symbolIndex)
+        {
+            newValue[newIndex] = current->line[newIndex];
+            newIndex++;
+            oldIndex++;
+        }
+
+        int textIndex = 0;
+        while (text[textIndex] != '\0')
+        {
+            newValue[newIndex] = text[textIndex];
+            newIndex++;
+            textIndex++;
+        }
+
+        oldIndex += strlen(text);
+
+        while (oldIndex < length)
+        {
+            newValue[newIndex] = current->line[oldIndex];
+            newIndex++;
+            oldIndex++;
+        }
+
+        newValue[newIndex] = '\0';
+
+        strcpy(current->line, newValue);
+
+
+        printf("> text replaced at line %d, symbol %d\n", lineIndex, symbolIndex);
+
+    }
 };
 
 class FileStruct 
@@ -273,7 +341,7 @@ public:
 
     void save(LinkedList stor) 
     {
-        char* text = stor.string_to_print();
+        char* text = stor.stringPrint();
 
         FILE* file;
         file = fopen(filename, "w");
@@ -303,13 +371,13 @@ public:
             while (fgets(line, sizeof(line), file) != nullptr) {
                 size_t length = strlen(line);
 
-                stor.add_line(line);
+                stor.addLine(line);
             }
 
             size_t lastLineLength = strlen(line);
             if (lastLineLength == sizeof(line) - 1 && line[lastLineLength] != '\0') {
                 line[lastLineLength] = '\0';
-                stor.add_line(line);
+                stor.addLine(line);
             }
 
             fclose(file);
@@ -334,6 +402,7 @@ public:
         printf("6 - print the current text to console\n");
         printf("7 - search\n");
         printf("8 - clearing the console\n");
+        printf("9 - insert with replacement\n");
     }
 
     void clear() {
@@ -359,11 +428,11 @@ public:
             insertText[length - 1] = '\0';
         }
 
-        stor.insert_text(lineIndex, symbolIndex, insertText);
+        stor.insertText(lineIndex, symbolIndex, insertText);
     }
 
     void print() {
-        char* text = stor.string_to_print();
+        char* text = stor.stringPrint();
         printf("\n%s\n", text);
         free(text);
     }
@@ -376,7 +445,7 @@ public:
         fgets(search, sizeof(search), stdin);
         search[strcspn(search, "\n")] = '\0';
 
-        stor.search_text(search);
+        stor.searchText(search);
     }
 
     void append(char str[80]) {
@@ -387,10 +456,10 @@ public:
         size_t length = strlen(str); // getting the length of the string
         if (length > 0 && str[length - 1] == '\n') {
             // remove the newline character
-            str[length - 1] = ' ';
+            str[length - 1] = '\0';
         }
 
-        stor.add_line(str);
+        stor.addLine(str);
     }
 
     void save() {
@@ -415,9 +484,33 @@ public:
         the_file.load(stor);
     }
 
-    void new_line() {
-        stor.start_new_line();
+    void newLine() {
+        stor.startNewLine();
         printf("> new line is started\n");
+    }
+
+    void replace() {
+
+        int lineIndex, symbolIndex;
+        char inputBuffer[80];
+
+        while (getchar() != '\n');
+        printf("> enter line and symbol indexes (like '1 4'): ");
+        fgets(inputBuffer, sizeof(inputBuffer), stdin);
+
+        sscanf(inputBuffer, "%d %d", &lineIndex, &symbolIndex);
+
+        char inputText[80];
+
+        printf("> enter text to insert: ");
+        fgets(inputText, sizeof(inputText), stdin);
+
+        size_t length = strlen(inputText);
+        if (length > 0 && inputText[length - 1] == '\n') {
+            inputText[length - 1] = '\0';
+        }
+
+        stor.replace(lineIndex, symbolIndex, inputText);
     }
 };
 
@@ -429,11 +522,12 @@ void main()
     TextEditor text_editor{};
 
     while (true) {
-
+        
         printf("> enter a number: ");
         printf("\n*if you need help with the commands - enter 0*\n");
         printf("> ");
         scanf_s("%d", &command);
+
 
         switch (command) {
         case 0:
@@ -445,7 +539,7 @@ void main()
             break;
 
         case 2:
-            text_editor.new_line();
+            text_editor.newLine();
             break;
             
         case 3:
@@ -470,6 +564,10 @@ void main()
 
         case 8:
             text_editor.clear();
+            break;
+
+        case 9:
+            text_editor.replace();
             break;
 
         default:
