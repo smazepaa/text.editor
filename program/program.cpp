@@ -394,7 +394,6 @@ public:
         }
         strcpy(current->line, newValue);
 
-        printf("> text deleted at line %d, symbol %d\n", lineIndex, symbolIndex);
     }
 
     char* copy(int lineIndex, int symbolIndex, int numSymbols) {
@@ -439,6 +438,14 @@ public:
         return buf;
     }
 
+    char* cut(int lineIndex, int symbolIndex, int numSymbols) {
+
+        char buffer[80];
+        strcpy(buffer, copy(lineIndex, symbolIndex, numSymbols));
+        deleteText(lineIndex, symbolIndex, numSymbols);
+        
+        return buffer;
+    }
 };
 
 class FileStruct 
@@ -513,6 +520,11 @@ public:
         printf("9 - insert with replacement\n");
         printf("10 - delete\n");
         printf("11 - copy\n");
+        printf("12 - cut\n");
+        printf("13 - paste\n");
+        printf("14 - undo\n");
+        printf("15 - redo\n");
+
     }
 
     void clear() {
@@ -635,6 +647,7 @@ public:
         sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
 
         stor.deleteText(lineIndex, symbolIndex, numSymbols);
+        printf("> text deleted at line %d, symbol %d\n", lineIndex, symbolIndex);
     }
 
     void copy() {
@@ -647,9 +660,44 @@ public:
         fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
         sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
+        free(buffer);
         strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols));
 
         printf("> text copied");
+    }
+
+    void cut() {
+        int lineIndex, symbolIndex, numSymbols;
+        char inputBuffer[80];
+
+        while (getchar() != '\n');
+        printf("> enter line and symbol indexes and number of symbols (like '1 4 9'): ");
+        fgets(inputBuffer, sizeof(inputBuffer), stdin);
+
+        sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
+
+        free(buffer);
+        strcpy(buffer, stor.cut(lineIndex, symbolIndex, numSymbols));
+
+        printf("> text cut at line %d, symbol %d\n", lineIndex, symbolIndex);
+    }
+
+    void paste() {
+        int lineIndex, symbolIndex, numSymbols;
+        char inputBuffer[80];
+
+        while (getchar() != '\n');
+        printf("> enter line and symbol indexes (like '1 4'): ");
+        fgets(inputBuffer, sizeof(inputBuffer), stdin);
+
+        sscanf(inputBuffer, "%d %d", &lineIndex, &symbolIndex);
+        stor.insertText(lineIndex, symbolIndex, buffer);
+
+        printf("> text pasted at line %d, symbol %d\n", lineIndex, symbolIndex);
+    }
+
+    int[2] getIndexes() {
+
     }
 };
 
@@ -714,6 +762,14 @@ void main()
 
         case 11:
             text_editor.copy();
+            break;
+
+        case 12:
+            text_editor.cut();
+            break;
+
+        case 13:
+            text_editor.paste();
             break;
 
         default:
