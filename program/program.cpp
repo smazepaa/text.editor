@@ -250,7 +250,6 @@ public:
 
         strcpy(current->line, newValue);
 
-        printf("> text inserted at line %d, symbol %d\n", lineIndex, symbolIndex);
     }
 
     void clear() 
@@ -551,6 +550,7 @@ public:
         }
 
         stor.insertText(lineIndex, symbolIndex, insertText);
+        printf("> text inserted at line %d, symbol %d\n", lineIndex, symbolIndex);
     }
 
     void print() {
@@ -660,10 +660,9 @@ public:
         fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
         sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
-        free(buffer);
         strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols));
 
-        printf("> text copied");
+        printf("> text copied\n");
     }
 
     void cut() {
@@ -675,8 +674,6 @@ public:
         fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
         sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
-
-        free(buffer);
         strcpy(buffer, stor.cut(lineIndex, symbolIndex, numSymbols));
 
         printf("> text cut at line %d, symbol %d\n", lineIndex, symbolIndex);
@@ -696,9 +693,6 @@ public:
         printf("> text pasted at line %d, symbol %d\n", lineIndex, symbolIndex);
     }
 
-    int[2] getIndexes() {
-
-    }
 };
 
 void main()
