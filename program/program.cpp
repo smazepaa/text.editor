@@ -250,7 +250,6 @@ public:
 
         strcpy(current->line, newValue);
 
-
         printf("> text inserted at line %d, symbol %d\n", lineIndex, symbolIndex);
     }
 
@@ -332,6 +331,114 @@ public:
         printf("> text replaced at line %d, symbol %d\n", lineIndex, symbolIndex);
 
     }
+
+    void deleteText(int lineIndex, int symbolIndex, int numSymbols) {
+
+        if (lineIndex < 1 || symbolIndex < 0 || symbolIndex > 79)
+        {
+            printf("> invalid line or index\n");
+            return;
+        }
+
+        Node* current = head;
+        int currentLine = 1;
+
+        while (current != nullptr && currentLine < lineIndex)
+        {
+            current = current->next;
+            currentLine++;
+        }
+
+        if (current == nullptr)
+        {
+            printf("> line not found\n");
+            return;
+        }
+
+        int length = current->length;
+
+        if (symbolIndex > length)
+        {
+            printf("> index out of range\n");
+            return;
+        }
+
+        char newValue[80];
+        int newIndex = 0;
+        int oldIndex = 0;
+
+        while (oldIndex < symbolIndex)
+        {
+            newValue[newIndex] = current->line[newIndex];
+            newIndex++;
+            oldIndex++;
+        }
+
+        oldIndex += numSymbols;
+
+        //current->length += strlen(text);
+
+        while (oldIndex < length)
+        {
+            newValue[newIndex] = current->line[oldIndex];
+            newIndex++;
+            oldIndex++;
+        }
+
+        newValue[newIndex] = '\0';
+
+        current->length -= numSymbols;
+
+        if (current->length < 0) {
+            current->length = 0;
+        }
+        strcpy(current->line, newValue);
+
+        printf("> text deleted at line %d, symbol %d\n", lineIndex, symbolIndex);
+    }
+
+    char* copy(int lineIndex, int symbolIndex, int numSymbols) {
+        char buf[80];
+        if (lineIndex < 1 || symbolIndex < 0 || symbolIndex > 79)
+        {
+            printf("> invalid line or index\n");
+            return NULL;
+        }
+
+        Node* current = head;
+        int currentLine = 1;
+
+        while (current != nullptr && currentLine < lineIndex)
+        {
+            current = current->next;
+            currentLine++;
+        }
+
+        if (current == nullptr)
+        {
+            printf("> line not found\n");
+            return NULL;
+        }
+
+        int length = current->length;
+
+        if (symbolIndex > length)
+        {
+            printf("> index out of range\n");
+            return NULL;
+        }
+
+        int i = 0;
+        for (i = 0; i < numSymbols && (symbolIndex + i) < current->length; i++) {
+            buf[i] = current->line[symbolIndex + i];
+        }
+
+        // Null-terminate the string in the buffer
+        buf[i] = '\0';
+
+        return buf;
+    }
+
 };
 
 class FileStruct 
@@ -391,6 +498,7 @@ class TextEditor
 {
 public:
     LinkedList stor{};
+    char buffer[80];
 
     void commands() {
         printf("\nList of commands\n");
@@ -403,6 +511,8 @@ public:
         printf("7 - search\n");
         printf("8 - clearing the console\n");
         printf("9 - insert with replacement\n");
+        printf("10 - delete\n");
+        printf("11 - copy\n");
     }
 
     void clear() {
@@ -448,7 +558,8 @@ public:
         stor.searchText(search);
     }
 
-    void append(char str[80]) {
+    void append() {
+        char str[80];
         while (getchar() != '\n');
         printf("> enter text to append (maximum 79 symbols): ");
         fgets(str, sizeof(str), stdin);
@@ -512,11 +623,38 @@ public:
 
         stor.replace(lineIndex, symbolIndex, inputText);
     }
+
+    void deleteText() {
+        int lineIndex, symbolIndex, numSymbols;
+        char inputBuffer[80];
+
+        while (getchar() != '\n');
+        printf("> enter line and symbol indexes and number of symbols (like '1 4 9'): ");
+        fgets(inputBuffer, sizeof(inputBuffer), stdin);
+
+        sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
+
+        stor.deleteText(lineIndex, symbolIndex, numSymbols);
+    }
+
+    void copy() {
+
+        int lineIndex, symbolIndex, numSymbols;
+        char inputBuffer[80];
+
+        while (getchar() != '\n');
+        printf("> enter line and symbol indexes and number of symbols (like '1 4 9'): ");
+        fgets(inputBuffer, sizeof(inputBuffer), stdin);
+
+        sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
+        strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols));
+
+        printf("> text copied");
+    }
 };
 
 void main()
 {
-    char str[80];
     int command;
     int counter = 0;
     TextEditor text_editor{};
@@ -535,7 +673,7 @@ void main()
             break;
 
         case 1:
-            text_editor.append(str);
+            text_editor.append();
             break;
 
         case 2:
@@ -568,6 +706,14 @@ void main()
 
         case 9:
             text_editor.replace();
+            break;
+
+        case 10:
+            text_editor.deleteText();
+            break;
+
+        case 11:
+            text_editor.copy();
             break;
 
         default:
