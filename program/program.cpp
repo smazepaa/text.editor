@@ -448,14 +448,6 @@ public:
         return buf;
     }
 
-    char* cut(int lineIndex, int symbolIndex, int numSymbols) {
-
-        char buffer[80];
-        strcpy(buffer, copy(lineIndex, symbolIndex, numSymbols));
-        deleteText(lineIndex, symbolIndex, numSymbols);
-        
-        return buffer;
-    }
 };
 
 class FileStruct 
@@ -726,7 +718,8 @@ public:
         fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
         sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
-        strcpy(buffer, stor.cut(lineIndex, symbolIndex, numSymbols));
+        strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols));
+        stor.deleteText(lineIndex, symbolIndex, numSymbols);
 
         printf("> text cut at line %d, symbol %d\n", lineIndex, symbolIndex);
 
