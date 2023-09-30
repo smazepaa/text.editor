@@ -16,6 +16,13 @@ public:
     int length = 0;
 };
 
+class Cursor 
+{
+public:
+    int symbol;
+    int line;
+};
+
 class Command
 {
 public:
@@ -448,6 +455,23 @@ public:
         return buf;
     }
 
+    void undoStartNewLine() {
+        Node* current = head;
+        Node* previous = nullptr;
+
+        // Go till the last node
+        while (current->next != nullptr) {
+            previous = current;
+            current = current->next;
+        }
+
+        // Delete the last node and update the previous node's next pointer
+        if (previous != nullptr) {
+            previous->next = nullptr;
+            delete current;
+        }
+    }
+
 };
 
 class FileStruct 
@@ -508,9 +532,10 @@ class TextEditor
 public:
     LinkedList stor{};
     char buffer[80];
-    int appended;
     stack<Command> commandStack;
-
+    LinkedList copy{};
+    Cursor cursor{};
+    
     void commands() {
         printf("\nList of commands\n");
         printf("1 - append text symbols to the end\n");
@@ -528,7 +553,7 @@ public:
         printf("13 - paste\n");
         printf("14 - undo\n");
         printf("15 - redo\n");
-
+        printf("16 - set cursor\n");
     }
 
     void clear() {
@@ -536,14 +561,7 @@ public:
     }
 
     void insert() {
-        int lineIndex, symbolIndex;
-        char inputBuffer[80];
 
-        while (getchar() != '\n');
-        printf("> enter line and symbol indexes (like '1 4'): ");
-        fgets(inputBuffer, sizeof(inputBuffer), stdin);
-
-        sscanf(inputBuffer, "%d %d", &lineIndex, &symbolIndex);
         char insertText[80];
 
         printf("> enter text to insert: ");
@@ -557,14 +575,14 @@ public:
         Command com{};
         com.command = 5;
         com.length = length - 1;
-        com.symbol = symbolIndex;
-        com.line = lineIndex;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
         com.text = insertText;
 
         commandStack.push(com);
 
-        stor.insertText(lineIndex, symbolIndex, insertText);
-        printf("> text inserted at line %d, symbol %d\n", lineIndex, symbolIndex);
+        stor.insertText(cursor.line, cursor.symbol, insertText);
+        printf("> text inserted at line %d, symbol %d\n", cursor.line, cursor.symbol);
     }
 
     void print() {
@@ -596,8 +614,6 @@ public:
             str[length - 1] = '\0';
         }
 
-        appended = length - 1;
-
         Command com{};
         com.command = 1;
         com.length = length - 1;
@@ -627,6 +643,11 @@ public:
         FileStruct the_file{};
         strcpy(the_file.filename, filename);
         the_file.load(stor);
+
+        Command com{};
+        com.command = 4;
+
+        commandStack.push(com);
     }
 
     void newLine() {
@@ -641,16 +662,8 @@ public:
 
     void replace() {
 
-        int lineIndex, symbolIndex;
-        char inputBuffer[80];
-
-        while (getchar() != '\n');
-        printf("> enter line and symbol indexes (like '1 4'): ");
-        fgets(inputBuffer, sizeof(inputBuffer), stdin);
-
-        sscanf(inputBuffer, "%d %d", &lineIndex, &symbolIndex);
-
         char inputText[80];
+        char originalText[80];
 
         printf("> enter text to insert: ");
         fgets(inputText, sizeof(inputText), stdin);
@@ -660,36 +673,37 @@ public:
             inputText[length - 1] = '\0';
         }
 
-        stor.replace(lineIndex, symbolIndex, inputText);
+        strcpy(originalText, stor.copy(cursor.line, cursor.symbol, length - 1));
+        stor.replace(cursor.line, cursor.symbol, inputText);
 
         Command com{};
         com.command = 9;
         com.length = length - 1;
-        com.symbol = symbolIndex;
-        com.line = lineIndex;
-        com.text = inputText;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
+        com.text = originalText;
 
         commandStack.push(com);
     }
 
     void deleteText() {
-        int lineIndex, symbolIndex, numSymbols;
-        char inputBuffer[80];
+        int numSymbols;
 
         while (getchar() != '\n');
-        printf("> enter line and symbol indexes and number of symbols (like '1 4 9'): ");
-        fgets(inputBuffer, sizeof(inputBuffer), stdin);
+        printf("> enter number of symbols to delete: ");
+        sscanf("%d", &numSymbols);
 
-        sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
-
-        stor.deleteText(lineIndex, symbolIndex, numSymbols);
-        printf("> text deleted at line %d, symbol %d\n", lineIndex, symbolIndex);
+        char deleted[80];
+        strcpy(deleted, stor.copy(cursor.line, cursor.symbol, numSymbols));
+        stor.deleteText(cursor.line, cursor.symbol, numSymbols);
+        printf("> text deleted at line %d, symbol %d\n", cursor.line, cursor.symbol);
 
         Command com{};
         com.command = 10;
         com.length = numSymbols;
-        com.symbol = symbolIndex;
-        com.line = lineIndex;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
+        com.text = deleted;
 
         commandStack.push(com);
     }
@@ -704,7 +718,7 @@ public:
         fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
         sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
-        strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols));
+        strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols)));
 
         printf("> text copied\n");
     }
@@ -728,6 +742,7 @@ public:
         com.length = numSymbols;
         com.symbol = symbolIndex;
         com.line = lineIndex;
+        com.text = buffer;
 
         commandStack.push(com);
     }
@@ -750,11 +765,12 @@ public:
         com.symbol = symbolIndex;
         com.line = lineIndex;
         com.text = buffer;
+        com.length = strlen(buffer);
 
         commandStack.push(com);
     }
 
-    void undoAppend() {
+    void undoAppend(int appended) {
         Node* current = stor.head;
 
         while (current->next != NULL) {
@@ -770,7 +786,66 @@ public:
         current->line[newLength] = '\0';
     }
 
+    void undo() {
 
+        copy = stor;
+        Command comToUndo{};
+
+        for (int i = 0; i < 3; i++) {
+            comToUndo = commandStack.pop();
+
+            switch (comToUndo.command)
+            {
+            case 1:
+                undoAppend(comToUndo.length);
+                break;
+            
+            case 2:
+                stor.undoStartNewLine();
+                break;
+
+            case 5:
+                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
+                break;
+
+            case 9:
+                stor.replace(comToUndo.line, comToUndo.symbol, comToUndo.text);
+                break;
+
+            case 10:
+                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
+                break;
+
+            case 12:
+                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
+                break;
+
+            case 13:
+                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
+                break;
+
+            default:
+                break;
+            }
+            i++;
+        }
+        
+    }
+
+    void setCursor(){
+
+        int lineIndex, symbolIndex;
+        char inputBuffer[80];
+
+        while (getchar() != '\n');
+        printf("> enter line and symbol indexes to set a cursor (like '1 4'): ");
+        fgets(inputBuffer, sizeof(inputBuffer), stdin);
+
+        sscanf(inputBuffer, "%d %d", &lineIndex, &symbolIndex);
+        
+        cursor.line = lineIndex;
+        cursor.symbol = symbolIndex;
+    }
 };
 
 void main()
@@ -845,7 +920,15 @@ void main()
             break;
 
         case 14:
-            text_editor.undoAppend();
+            text_editor.undo();
+            break;
+
+        case 15:
+            text_editor.stor = text_editor.copy;
+            break;
+
+        case 16:
+            text_editor.setCursor();
             break;
 
         default:
