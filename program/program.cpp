@@ -3,6 +3,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include "program.h"
+#include <fstream>
+#include <stack>
+
+using namespace std;
 
 class Node
 {
@@ -10,6 +14,13 @@ public:
     char line[80];
     Node* next;
     int length = 0;
+};
+
+class Command
+{
+public:
+    int command, length, line, symbol;
+    char* text;
 };
 
 class LinkedList
@@ -505,6 +516,8 @@ class TextEditor
 public:
     LinkedList stor{};
     char buffer[80];
+    int appended;
+    stack<Command> commandStack;
 
     void commands() {
         printf("\nList of commands\n");
@@ -549,6 +562,15 @@ public:
             insertText[length - 1] = '\0';
         }
 
+        Command com{};
+        com.command = 5;
+        com.length = length - 1;
+        com.symbol = symbolIndex;
+        com.line = lineIndex;
+        com.text = insertText;
+
+        commandStack.push(com);
+
         stor.insertText(lineIndex, symbolIndex, insertText);
         printf("> text inserted at line %d, symbol %d\n", lineIndex, symbolIndex);
     }
@@ -582,6 +604,14 @@ public:
             str[length - 1] = '\0';
         }
 
+        appended = length - 1;
+
+        Command com{};
+        com.command = 1;
+        com.length = length - 1;
+
+        commandStack.push(com);
+
         stor.addLine(str);
     }
 
@@ -610,6 +640,11 @@ public:
     void newLine() {
         stor.startNewLine();
         printf("> new line is started\n");
+
+        Command com{};
+        com.command = 2;
+
+        commandStack.push(com);
     }
 
     void replace() {
@@ -634,6 +669,15 @@ public:
         }
 
         stor.replace(lineIndex, symbolIndex, inputText);
+
+        Command com{};
+        com.command = 9;
+        com.length = length - 1;
+        com.symbol = symbolIndex;
+        com.line = lineIndex;
+        com.text = inputText;
+
+        commandStack.push(com);
     }
 
     void deleteText() {
@@ -648,6 +692,14 @@ public:
 
         stor.deleteText(lineIndex, symbolIndex, numSymbols);
         printf("> text deleted at line %d, symbol %d\n", lineIndex, symbolIndex);
+
+        Command com{};
+        com.command = 10;
+        com.length = numSymbols;
+        com.symbol = symbolIndex;
+        com.line = lineIndex;
+
+        commandStack.push(com);
     }
 
     void copy() {
@@ -677,10 +729,18 @@ public:
         strcpy(buffer, stor.cut(lineIndex, symbolIndex, numSymbols));
 
         printf("> text cut at line %d, symbol %d\n", lineIndex, symbolIndex);
+
+        Command com{};
+        com.command = 12;
+        com.length = numSymbols;
+        com.symbol = symbolIndex;
+        com.line = lineIndex;
+
+        commandStack.push(com);
     }
 
     void paste() {
-        int lineIndex, symbolIndex, numSymbols;
+        int lineIndex, symbolIndex;
         char inputBuffer[80];
 
         while (getchar() != '\n');
@@ -691,7 +751,32 @@ public:
         stor.insertText(lineIndex, symbolIndex, buffer);
 
         printf("> text pasted at line %d, symbol %d\n", lineIndex, symbolIndex);
+
+        Command com{};
+        com.command = 13;
+        com.symbol = symbolIndex;
+        com.line = lineIndex;
+        com.text = buffer;
+
+        commandStack.push(com);
     }
+
+    void undoAppend() {
+        Node* current = stor.head;
+
+        while (current->next != NULL) {
+            current = current->next;
+        }
+
+        int newLength = current->length - appended;
+        if (newLength < 0) {
+            newLength = 0;
+        }
+
+        current->length = newLength;
+        current->line[newLength] = '\0';
+    }
+
 
 };
 
@@ -764,6 +849,10 @@ void main()
 
         case 13:
             text_editor.paste();
+            break;
+
+        case 14:
+            text_editor.undoAppend();
             break;
 
         default:
