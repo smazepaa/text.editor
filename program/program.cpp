@@ -3,10 +3,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include "program.h"
-#include <fstream>
-#include <stack>
-
-using namespace std;
 
 class Node
 {
@@ -16,18 +12,11 @@ public:
     int length = 0;
 };
 
-class Cursor 
+class Cursor
 {
 public:
     int symbol;
     int line;
-};
-
-class Command
-{
-public:
-    int command, length, line, symbol;
-    char* text;
 };
 
 class LinkedList
@@ -270,7 +259,7 @@ public:
 
     }
 
-    void clear() 
+    void clear()
     {
         Node* current = head;
         while (current != nullptr) {
@@ -455,31 +444,22 @@ public:
         return buf;
     }
 
-    void undoStartNewLine() {
-        Node* current = head;
-        Node* previous = nullptr;
+    char* cut(int lineIndex, int symbolIndex, int numSymbols) {
 
-        // Go till the last node
-        while (current->next != nullptr) {
-            previous = current;
-            current = current->next;
-        }
+        char buffer[80];
+        strcpy(buffer, copy(lineIndex, symbolIndex, numSymbols));
+        deleteText(lineIndex, symbolIndex, numSymbols);
 
-        // Delete the last node and update the previous node's next pointer
-        if (previous != nullptr) {
-            previous->next = nullptr;
-            delete current;
-        }
+        return buffer;
     }
-
 };
 
-class FileStruct 
+class FileStruct
 {
 public:
     char filename[80];
 
-    void save(LinkedList stor) 
+    void save(LinkedList stor)
     {
         char* text = stor.stringPrint();
 
@@ -497,7 +477,7 @@ public:
         free(text);
     }
 
-    void load(LinkedList stor) 
+    void load(LinkedList stor)
     {
         FILE* file;
         char line[80];
@@ -527,15 +507,14 @@ public:
 
 };
 
-class TextEditor 
+class TextEditor
 {
 public:
     LinkedList stor{};
     char buffer[80];
-    stack<Command> commandStack;
-    LinkedList copy{};
     Cursor cursor{};
-    
+
+
     void commands() {
         printf("\nList of commands\n");
         printf("1 - append text symbols to the end\n");
@@ -561,9 +540,9 @@ public:
     }
 
     void insert() {
-
+        
         char insertText[80];
-
+        while (getchar() != '\n');
         printf("> enter text to insert: ");
         fgets(insertText, sizeof(insertText), stdin);
 
@@ -572,17 +551,10 @@ public:
             insertText[length - 1] = '\0';
         }
 
-        Command com{};
-        com.command = 5;
-        com.length = length - 1;
-        com.symbol = cursor.symbol;
-        com.line = cursor.line;
-        com.text = insertText;
-
-        commandStack.push(com);
-
         stor.insertText(cursor.line, cursor.symbol, insertText);
         printf("> text inserted at line %d, symbol %d\n", cursor.line, cursor.symbol);
+        cursor.symbol += length - 1;
+        
     }
 
     void print() {
@@ -614,12 +586,6 @@ public:
             str[length - 1] = '\0';
         }
 
-        Command com{};
-        com.command = 1;
-        com.length = length - 1;
-
-        commandStack.push(com);
-
         stor.addLine(str);
     }
 
@@ -643,29 +609,18 @@ public:
         FileStruct the_file{};
         strcpy(the_file.filename, filename);
         the_file.load(stor);
-
-        Command com{};
-        com.command = 4;
-
-        commandStack.push(com);
     }
 
     void newLine() {
         stor.startNewLine();
         printf("> new line is started\n");
-
-        Command com{};
-        com.command = 2;
-
-        commandStack.push(com);
     }
 
     void replace() {
-
+        
         char inputText[80];
-        char originalText[80];
-
-        printf("> enter text to insert: ");
+        while (getchar() != '\n');
+        printf("> enter text to replace with: ");
         fgets(inputText, sizeof(inputText), stdin);
 
         size_t length = strlen(inputText);
@@ -673,166 +628,69 @@ public:
             inputText[length - 1] = '\0';
         }
 
-        strcpy(originalText, stor.copy(cursor.line, cursor.symbol, length - 1));
         stor.replace(cursor.line, cursor.symbol, inputText);
-
-        Command com{};
-        com.command = 9;
-        com.length = length - 1;
-        com.symbol = cursor.symbol;
-        com.line = cursor.line;
-        com.text = originalText;
-
-        commandStack.push(com);
+        cursor.symbol += length - 1;
+        
     }
 
     void deleteText() {
-        int numSymbols;
+        
+        int numSymbols = 0;
+        char inputBuffer[80];
 
         while (getchar() != '\n');
         printf("> enter number of symbols to delete: ");
-        sscanf("%d", &numSymbols);
+        fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
-        char deleted[80];
-        strcpy(deleted, stor.copy(cursor.line, cursor.symbol, numSymbols));
+        sscanf(inputBuffer, "%d", &numSymbols);
+
         stor.deleteText(cursor.line, cursor.symbol, numSymbols);
         printf("> text deleted at line %d, symbol %d\n", cursor.line, cursor.symbol);
-
-        Command com{};
-        com.command = 10;
-        com.length = numSymbols;
-        com.symbol = cursor.symbol;
-        com.line = cursor.line;
-        com.text = deleted;
-
-        commandStack.push(com);
+        
     }
 
     void copy() {
 
-        int lineIndex, symbolIndex, numSymbols;
+        int numSymbols = 0;
         char inputBuffer[80];
 
         while (getchar() != '\n');
-        printf("> enter line and symbol indexes and number of symbols (like '1 4 9'): ");
+        printf("> enter number of symbols to copy: ");
         fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
-        sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
-        strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols)));
+        sscanf(inputBuffer, "%d", &numSymbols);
+
+        strcpy(buffer, stor.copy(cursor.line, cursor.symbol, numSymbols));
 
         printf("> text copied\n");
     }
 
     void cut() {
-        int lineIndex, symbolIndex, numSymbols;
+        
+        int numSymbols = 0;
         char inputBuffer[80];
 
         while (getchar() != '\n');
-        printf("> enter line and symbol indexes and number of symbols (like '1 4 9'): ");
+        printf("> enter number of symbols to cut: ");
         fgets(inputBuffer, sizeof(inputBuffer), stdin);
 
-        sscanf(inputBuffer, "%d %d %d", &lineIndex, &symbolIndex, &numSymbols);
-        strcpy(buffer, stor.copy(lineIndex, symbolIndex, numSymbols));
-        stor.deleteText(lineIndex, symbolIndex, numSymbols);
+        sscanf(inputBuffer, "%d", &numSymbols);
 
-        printf("> text cut at line %d, symbol %d\n", lineIndex, symbolIndex);
+        strcpy(buffer, stor.cut(cursor.line, cursor.symbol, numSymbols));
 
-        Command com{};
-        com.command = 12;
-        com.length = numSymbols;
-        com.symbol = symbolIndex;
-        com.line = lineIndex;
-        com.text = buffer;
-
-        commandStack.push(com);
-    }
-
-    void paste() {
-        int lineIndex, symbolIndex;
-        char inputBuffer[80];
-
-        while (getchar() != '\n');
-        printf("> enter line and symbol indexes (like '1 4'): ");
-        fgets(inputBuffer, sizeof(inputBuffer), stdin);
-
-        sscanf(inputBuffer, "%d %d", &lineIndex, &symbolIndex);
-        stor.insertText(lineIndex, symbolIndex, buffer);
-
-        printf("> text pasted at line %d, symbol %d\n", lineIndex, symbolIndex);
-
-        Command com{};
-        com.command = 13;
-        com.symbol = symbolIndex;
-        com.line = lineIndex;
-        com.text = buffer;
-        com.length = strlen(buffer);
-
-        commandStack.push(com);
-    }
-
-    void undoAppend(int appended) {
-        Node* current = stor.head;
-
-        while (current->next != NULL) {
-            current = current->next;
-        }
-
-        int newLength = current->length - appended;
-        if (newLength < 0) {
-            newLength = 0;
-        }
-
-        current->length = newLength;
-        current->line[newLength] = '\0';
-    }
-
-    void undo() {
-
-        copy = stor;
-        Command comToUndo{};
-
-        for (int i = 0; i < 3; i++) {
-            comToUndo = commandStack.pop();
-
-            switch (comToUndo.command)
-            {
-            case 1:
-                undoAppend(comToUndo.length);
-                break;
-            
-            case 2:
-                stor.undoStartNewLine();
-                break;
-
-            case 5:
-                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
-                break;
-
-            case 9:
-                stor.replace(comToUndo.line, comToUndo.symbol, comToUndo.text);
-                break;
-
-            case 10:
-                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
-                break;
-
-            case 12:
-                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
-                break;
-
-            case 13:
-                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
-                break;
-
-            default:
-                break;
-            }
-            i++;
-        }
+        printf("> text cut at line %d, symbol %d\n", cursor.line, cursor.symbol);
         
     }
 
-    void setCursor(){
+    void paste() {
+
+        stor.insertText(cursor.line, cursor.symbol, buffer);
+        printf("> text pasted at line %d, symbol %d\n", cursor.line, cursor.symbol);
+
+        cursor.symbol += strlen(buffer);
+    }
+
+    void setCursor() {
 
         int lineIndex, symbolIndex;
         char inputBuffer[80];
@@ -855,7 +713,7 @@ void main()
     TextEditor text_editor{};
 
     while (true) {
-        
+
         printf("> enter a number: ");
         printf("\n*if you need help with the commands - enter 0*\n");
         printf("> ");
@@ -874,7 +732,7 @@ void main()
         case 2:
             text_editor.newLine();
             break;
-            
+
         case 3:
             text_editor.save();
             break;
@@ -917,14 +775,6 @@ void main()
 
         case 13:
             text_editor.paste();
-            break;
-
-        case 14:
-            text_editor.undo();
-            break;
-
-        case 15:
-            text_editor.stor = text_editor.copy;
             break;
 
         case 16:
