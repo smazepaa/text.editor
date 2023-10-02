@@ -3,6 +3,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include "program.h"
+#include <stack>
+
+using namespace std;
 
 class Node
 {
@@ -17,6 +20,13 @@ class Cursor
 public:
     int symbol;
     int line;
+};
+
+class Command
+{
+public:
+    int command, length, line, symbol;
+    char* text;
 };
 
 class LinkedList
@@ -452,6 +462,25 @@ public:
 
         return buffer;
     }
+
+    void undoStartNewLine() {
+        Node* current = head;
+        Node* previous = nullptr;
+
+        // Go till the last node
+        while (current->next != nullptr) {
+            previous = current;
+            current = current->next;
+        }
+
+        // Delete the last node and update the previous node's next pointer
+        if (previous != nullptr) {
+            previous->next = nullptr;
+            delete current;
+        }
+    }
+
+
 };
 
 class FileStruct
@@ -511,8 +540,10 @@ class TextEditor
 {
 public:
     LinkedList stor{};
+    LinkedList originalList{};
     char buffer[80];
     Cursor cursor{};
+    stack<Command> commandStack;
 
 
     void commands() {
@@ -551,6 +582,15 @@ public:
             insertText[length - 1] = '\0';
         }
 
+        Command com{};
+        com.command = 5;
+        com.length = length - 1;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
+        com.text = insertText;
+
+        commandStack.push(com);
+
         stor.insertText(cursor.line, cursor.symbol, insertText);
         printf("> text inserted at line %d, symbol %d\n", cursor.line, cursor.symbol);
         cursor.symbol += length - 1;
@@ -586,6 +626,13 @@ public:
             str[length - 1] = '\0';
         }
 
+        Command com{};
+        com.command = 1;
+        com.length = length - 1;
+        com.text = 
+
+        commandStack.push(com);
+
         stor.addLine(str);
     }
 
@@ -614,11 +661,18 @@ public:
     void newLine() {
         stor.startNewLine();
         printf("> new line is started\n");
+
+        Command com{};
+        com.command = 2;
+
+        commandStack.push(com);
     }
 
     void replace() {
         
         char inputText[80];
+        char originalText[80];
+
         while (getchar() != '\n');
         printf("> enter text to replace with: ");
         fgets(inputText, sizeof(inputText), stdin);
@@ -628,7 +682,18 @@ public:
             inputText[length - 1] = '\0';
         }
 
+        strcpy(originalText, stor.copy(cursor.line, cursor.symbol, length - 1));
         stor.replace(cursor.line, cursor.symbol, inputText);
+
+        Command com{};
+        com.command = 9;
+        com.length = length - 1;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
+        com.text = originalText;
+
+        commandStack.push(com);
+
         cursor.symbol += length - 1;
         
     }
@@ -644,8 +709,19 @@ public:
 
         sscanf(inputBuffer, "%d", &numSymbols);
 
+        char* deleted = new char[80];
+        strcpy(deleted, stor.copy(cursor.line, cursor.symbol, numSymbols));
         stor.deleteText(cursor.line, cursor.symbol, numSymbols);
         printf("> text deleted at line %d, symbol %d\n", cursor.line, cursor.symbol);
+
+        Command com{};
+        com.command = 10;
+        com.length = numSymbols;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
+        com.text = deleted;
+
+        commandStack.push(com);
         
     }
 
@@ -679,13 +755,30 @@ public:
         strcpy(buffer, stor.cut(cursor.line, cursor.symbol, numSymbols));
 
         printf("> text cut at line %d, symbol %d\n", cursor.line, cursor.symbol);
-        
+     
+        Command com{};
+        com.command = 12;
+        com.length = numSymbols;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
+        com.text = buffer;
+
+        commandStack.push(com);
     }
 
     void paste() {
 
         stor.insertText(cursor.line, cursor.symbol, buffer);
         printf("> text pasted at line %d, symbol %d\n", cursor.line, cursor.symbol);
+
+        Command com{};
+        com.command = 13;
+        com.symbol = cursor.symbol;
+        com.line = cursor.line;
+        com.text = buffer;
+        com.length = strlen(buffer);
+
+        commandStack.push(com);
 
         cursor.symbol += strlen(buffer);
     }
@@ -704,6 +797,70 @@ public:
         cursor.line = lineIndex;
         cursor.symbol = symbolIndex;
     }
+
+    void undoAppend(int appended) {
+        Node* current = stor.head;
+
+        while (current->next != NULL) {
+            current = current->next;
+        }
+
+        int newLength = current->length - appended;
+        if (newLength < 0) {
+            newLength = 0;
+        }
+
+        current->length = newLength;
+        current->line[newLength] = '\0';
+    }
+
+    void undo() {
+
+
+        Command comToUndo{};
+
+        for (int i = 0; i < 3; i++) {
+            Command comToUndo = commandStack.top();
+            commandStack.pop();
+
+            switch (comToUndo.command)
+            {
+            case 1:
+                undoAppend(comToUndo.length);
+                break;
+
+            case 2:
+                stor.undoStartNewLine();
+                break;
+
+            case 5:
+                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
+                break;
+
+            case 9:
+                stor.replace(comToUndo.line, comToUndo.symbol, comToUndo.text);
+                break;
+
+            case 10:
+                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
+                break;
+
+            case 12:
+                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
+                break;
+
+            case 13:
+                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
+                break;
+
+            default:
+                break;
+            }
+            
+        }
+
+    }
+
 };
 
 void main()
@@ -775,6 +932,10 @@ void main()
 
         case 13:
             text_editor.paste();
+            break;
+
+        case 14:
+            text_editor.undo();
             break;
 
         case 16:
