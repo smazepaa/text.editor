@@ -610,6 +610,7 @@ public:
         printf("14 - undo\n");
         printf("15 - redo\n");
         printf("16 - set cursor\n");
+        printf("17 - print cursor position");
     }
 
     void clear() {
@@ -842,7 +843,11 @@ public:
         cursor.line = lineIndex;
         cursor.symbol = symbolIndex;
 
-        printf("> cursor was set at line %d, symbol %d", cursor.line, cursor.symbol);
+        printf("> cursor was set at line %d, symbol %d\n", cursor.line, cursor.symbol);
+    }
+
+    void getCursor() {
+        printf("> cursor at line %d, symbol %d\n", cursor.line, cursor.symbol);
     }
 
     void undoAppend(int appended) {
@@ -997,6 +1002,10 @@ void main()
 
         case 16:
             text_editor.setCursor();
+            break;
+
+        case 17:
+            text_editor.getCursor();
             break;
 
         default:
