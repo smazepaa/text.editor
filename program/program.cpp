@@ -34,6 +34,55 @@ class LinkedList
 public:
     Node* head;
 
+    LinkedList() : head(nullptr) {}
+
+    // Copy constructor
+    LinkedList(const LinkedList& other) : head(nullptr) {
+        if (other.head) {
+            head = new Node();
+            strcpy(head->line, other.head->line);
+            Node* current = head;
+            Node* otherCurrent = other.head->next;
+            while (otherCurrent) {
+                current->next = new Node();
+                strcpy(current->next->line, otherCurrent->line);
+                current = current->next;
+                otherCurrent = otherCurrent->next;
+            }
+        }
+    }
+
+    // Assignment operator
+    LinkedList& operator=(const LinkedList& other) {
+        if (this != &other) { // protect against invalid self-assignment
+            // 1: deallocate old memory
+            Node* current = head;
+            while (current) {
+                Node* next = current->next;
+                delete current;
+                current = next;
+            }
+
+            // 2: allocate new memory and copy the elements
+            head = nullptr;
+            if (other.head) {
+                head = new Node();
+                strcpy(head->line, other.head->line);
+                current = head;
+                Node* otherCurrent = other.head->next;
+                while (otherCurrent) {
+                    current->next = new Node();
+                    strcpy(current->next->line, otherCurrent->line);
+                    current = current->next;
+                    otherCurrent = otherCurrent->next;
+                }
+            }
+        }
+        return *this; // by convention, always return *this
+    }
+
+
+
     void addLine(const char* l)
     {
         // create a new node for the input line
@@ -392,8 +441,6 @@ public:
 
         oldIndex += numSymbols;
 
-        //current->length += strlen(text);
-
         while (oldIndex < length)
         {
             newValue[newIndex] = current->line[oldIndex];
@@ -480,7 +527,6 @@ public:
         }
     }
 
-
 };
 
 class FileStruct
@@ -539,8 +585,8 @@ public:
 class TextEditor
 {
 public:
-    LinkedList stor{};
-    LinkedList originalList{};
+    LinkedList stor;
+    LinkedList originalList;
     char buffer[80];
     Cursor cursor{};
     stack<Command> commandStack;
@@ -629,7 +675,6 @@ public:
         Command com{};
         com.command = 1;
         com.length = length - 1;
-        com.text = 
 
         commandStack.push(com);
 
@@ -796,6 +841,8 @@ public:
         
         cursor.line = lineIndex;
         cursor.symbol = symbolIndex;
+
+        printf("> cursor was set at line %d, symbol %d", cursor.line, cursor.symbol);
     }
 
     void undoAppend(int appended) {
@@ -816,8 +863,8 @@ public:
 
     void undo() {
 
-
         Command comToUndo{};
+        originalList = stor;
 
         for (int i = 0; i < 3; i++) {
             Command comToUndo = commandStack.top();
@@ -858,7 +905,13 @@ public:
             }
             
         }
+        printf("> 3 last commands were undone");
 
+    }
+
+    void redo() {
+        stor = originalList;
+        printf("> redo completed");
     }
 
 };
@@ -936,6 +989,10 @@ void main()
 
         case 14:
             text_editor.undo();
+            break;
+
+        case 15:
+            text_editor.redo();
             break;
 
         case 16:
