@@ -871,46 +871,42 @@ public:
         Command comToUndo{};
         originalList = stor;
 
-        for (int i = 0; i < 3; i++) {
-            Command comToUndo = commandStack.top();
-            commandStack.pop();
+        Command comToUndo = commandStack.top();
+        commandStack.pop();
 
-            switch (comToUndo.command)
-            {
-            case 1:
-                undoAppend(comToUndo.length);
-                break;
+        switch (comToUndo.command)
+        {
+        case 1:
+            undoAppend(comToUndo.length);
+            break;
 
-            case 2:
-                stor.undoStartNewLine();
-                break;
+        case 2:
+            stor.undoStartNewLine();
+            break;
 
-            case 5:
-                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
-                break;
+        case 5:
+            stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
+            break;
 
-            case 9:
-                stor.replace(comToUndo.line, comToUndo.symbol, comToUndo.text);
-                break;
+        case 9:
+            stor.replace(comToUndo.line, comToUndo.symbol, comToUndo.text);
+            break;
 
-            case 10:
-                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
-                break;
+        case 10:
+            stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
+            break;
 
-            case 12:
-                stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
-                break;
+        case 12:
+            stor.insertText(comToUndo.line, comToUndo.symbol, comToUndo.text);
+            break;
 
-            case 13:
-                stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
-                break;
+        case 13:
+            stor.deleteText(comToUndo.line, comToUndo.symbol, comToUndo.length);
+            break;
 
-            default:
-                break;
-            }
-            
+        default:
+            break;
         }
-        printf("> 3 last commands were undone");
 
     }
 
@@ -954,6 +950,7 @@ void main()
 
         case 4:
             text_editor.load();
+            text_editor.commandStack.empty();
             break;
 
         case 5:
