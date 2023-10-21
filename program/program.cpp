@@ -4,6 +4,7 @@
 #include <cstring>
 #include <windows.h>
 #include <stack>
+#include <random>
 
 using namespace std;
 
@@ -557,6 +558,13 @@ public:
         }
     }
 
+    void decrypt(int key) {
+        Node* current = head;
+        while (current != nullptr) {
+            encryptor.decrypt(current->line, key, current->length);
+            current = current->next;
+        }
+    }
 };
 
 class FileStruct
@@ -612,6 +620,27 @@ public:
 
 };
 
+class Random {
+public:
+    int GetRandomNumber() {
+        // Seed the random number generator with a value (you can use a different seed or even a time-based seed)
+        std::random_device rd;
+        std::mt19937 gen(rd());
+
+        // Define the range of random numbers
+        int min = 1;
+        int max = 100;
+
+        // Create a distribution
+        std::uniform_int_distribution<int> distribution(min, max);
+
+        // Generate a random number within the specified range
+        int random_number = distribution(gen);
+
+        return random_number;
+    }
+};
+
 class IReader
 {
 public:
@@ -655,8 +684,7 @@ public:
         printf("15 - redo\n");
         printf("16 - set cursor\n");
         printf("17 - print cursor position\n");
-        printf("18 - encrypt\n");
-        printf("19 - decrypt\n");
+        printf("18 - encrypt/decrypt\n");
     }
 
     void clear() {
@@ -912,11 +940,38 @@ public:
         current->line[newLength] = '\0';
     }
 
-    void encrypt() {
+    void encryptDecrypt() {
+
+        int operation;
+        std::string modeEncrypt;
+        std::string inputFile;
+        std::string outputFile;
+
+        std::cout << "> Choose an operation (1 for encrypt, 2 for decrypt): ";
+        std::cin >> operation;
+
+        std::cout << "> Choose a mode (n for normal, s for secret): ";
+        std::cin >> modeEncrypt;
+
+        std::cout << "> enter path to the input file: ";
+        std::cin >> inputFile;
+
+        std::cout << "> enter path to the output file: ";
+        std::cin >> outputFile;
+
         int key;
-        std::cout << "> enter a key: ";
-        std::cin >> key;       
-        stor.encrypt(key);
+        Random random{};
+
+        if (modeEncrypt == "n") {
+            std::cout << "> enter a key: ";
+            std::cin >> key;
+        }
+        else if (modeEncrypt == "s") {
+            key = random.GetRandomNumber();
+        }
+        else {
+            std::cout << "> invalid mode" << std::endl;
+        }
     }
 
     void undo() {
@@ -1058,7 +1113,7 @@ int main()
             break;
 
         case 18:
-            text_editor.encrypt();
+            text_editor.encryptDecrypt();
             break;
 
         default:
