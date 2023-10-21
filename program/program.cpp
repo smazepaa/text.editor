@@ -561,7 +561,7 @@ public:
     void decrypt(int key) {
         Node* current = head;
         while (current != nullptr) {
-            encryptor.decrypt(current->line, key, current->length);
+            encryptor.decrypt(current->line, key, current->length-1);
             current = current->next;
         }
     }
@@ -667,6 +667,8 @@ public:
     Cursor cursor{};
     stack<Command> commandStack;
     Encryptor encryptor{};
+    IReader* reader = new Reader();
+    IWriter* writer = new Writer();
 
     void commands() {
         printf("\nList of commands\n");
@@ -763,9 +765,7 @@ public:
         std::string outputFile;
         std::cout << "> enter path to the output file: ";
         std::cin >> outputFile;
-        IWriter* writer = new Writer();
         writer->Save(stor, outputFile);
-        delete(writer);
     }
 
     void load() {
@@ -774,9 +774,7 @@ public:
         std::string inputFile;
         std::cout << "> enter path to the input file: ";
         std::cin >> inputFile;
-        IReader* reader = new Reader();
         reader->Load(stor, inputFile);
-        delete(reader);
     }
 
     void newLine() {
@@ -977,9 +975,23 @@ public:
 
         stor.clear();
 
-        IReader* reader = new Reader();
         reader->Load(stor, inputFile);
-        delete(reader);
+        switch (operation)
+        {
+
+        case 1:
+            stor.encrypt(key);
+            break;
+
+        case 2:
+            stor.decrypt(key);
+            break;
+
+        default:
+            std::cout << "invalid command" << std::endl;
+            break;
+        }
+        writer->Save(stor, outputFile);
     }
 
     void undo() {
