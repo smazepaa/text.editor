@@ -661,17 +661,18 @@ public:
     Cursor cursor{};
     stack<Command> commandStack;
     Encryptor encryptor{};
+    IReader* reader = new Reader();
 
     void commands() {
         printf("\nList of commands\n");
-        printf("1 - append text symbols to the end\n");
+        printf("1 - append text\n");
         printf("2 - start the new line\n");
-        printf("3 - saving the information to file\n");
-        printf("4 - loading the information from file\n");
-        printf("5 - insert the text by line and symbol index\n");
-        printf("6 - print the current text to console\n");
+        printf("3 - saving to file\n");
+        printf("4 - loading from file\n");
+        printf("5 - insert the text\n");
+        printf("6 - print the current text\n");
         printf("7 - search\n");
-        printf("8 - clearing the console\n");
+        printf("8 - clear the console\n");
         printf("9 - insert with replacement\n");
         printf("10 - delete\n");
         printf("11 - copy\n");
@@ -681,7 +682,7 @@ public:
         printf("15 - redo\n");
         printf("16 - set cursor\n");
         printf("17 - print cursor position\n");
-        printf("18 - encrypt/decrypt\n");
+        printf("18 - encrypt/decrypt\n\n");
     }
 
     void clear() {
@@ -763,14 +764,24 @@ public:
         the_file.save(stor);
     }
 
-    void load(string path) {
-        //stor.clearList();
+    void load() {
+        stor.clear();
 
-        //IReader reader;
-        //reader.Load(stor, path);
+        std::string inputFile;
+        std::cout << "> enter path to the input file: ";
+        std::cin >> inputFile;
+        reader->Load(stor, inputFile);
     }
 
-    //void newLine()
+    void newLine() {
+        stor.startNewLine();
+        printf("> new line is started\n");
+
+        Command com{};
+        com.command = 2;
+
+        commandStack.push(com);
+    }
 
     void replace() {
         
@@ -959,7 +970,6 @@ public:
 
         stor.clear();
 
-        IReader* reader = new Reader();
         reader->Load(stor, inputFile);
     }
 
@@ -1015,7 +1025,6 @@ public:
 
 int main()
 {
-
     int command;
     int counter = 0;
     TextEditor text_editor{};
@@ -1037,7 +1046,7 @@ int main()
             break;
 
         case 2:
-            //text_editor.newLine();
+            text_editor.newLine();
             break;
 
         case 3:
@@ -1045,7 +1054,7 @@ int main()
             break;
 
         case 4:
-            //text_editor.load();
+            text_editor.load();
             text_editor.commandStack.empty();
             break;
 
