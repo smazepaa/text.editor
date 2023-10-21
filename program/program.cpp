@@ -590,34 +590,6 @@ public:
         free(text);
     }
 
-    void load(LinkedList stor)
-    {
-        FILE* file;
-        char line[80];
-
-        file = fopen(filename, "r");
-
-        if (file == nullptr) {
-            printf("> Error opening file\n");
-        }
-        else {
-            while (fgets(line, sizeof(line), file) != nullptr) {
-                size_t length = strlen(line);
-
-                // If the last character is not a newline, keep reading
-                while (length > 0 && line[length - 1] != '\n' && fgets(line + length, sizeof(line) - length, file) != nullptr) {
-                    length = strlen(line);
-                }
-
-                stor.addLine(line);
-            }
-
-            fclose(file);
-            printf("> Text has been successfully loaded from %s\n", filename);
-        }
-
-    }
-
 };
 
 class Random {
@@ -645,13 +617,38 @@ class IReader
 {
 public:
     virtual ~IReader() {}
-    virtual void Run() = 0;
+    virtual void Load(LinkedList& stor, string filename) = 0;
 };
 
 class Reader : public IReader
 {
-    virtual void Load(LinkedList stor) {
+public:
+    virtual void Load(LinkedList& stor, string filename) {
+        FILE* file;
+        char line[80];
+        char* filen = new char[filename.length() + 1];
+        std::strcpy(filen, filename.c_str());
 
+        file = fopen(filen, "r");
+
+        if (file == nullptr) {
+            printf("> Error opening file\n");
+        }
+        else {
+            while (fgets(line, sizeof(line), file) != nullptr) {
+                size_t length = strlen(line);
+
+                // If the last character is not a newline, keep reading
+                while (length > 0 && line[length - 1] != '\n' && fgets(line + length, sizeof(line) - length, file) != nullptr) {
+                    length = strlen(line);
+                }
+
+                stor.addLine(line);
+            }
+
+            fclose(file);
+            std::cout << "> Text has been successfully loaded from " << filename << std::endl;
+        }
     }
 };
 
@@ -766,27 +763,14 @@ public:
         the_file.save(stor);
     }
 
-    void load() {
-        stor.clear();
+    void load(string path) {
+        //stor.clearList();
 
-        char filename[80];
-        printf("> Enter the file name for loading: ");
-        scanf("%s", filename);
-
-        FileStruct the_file{};
-        strcpy(the_file.filename, filename);
-        the_file.load(stor);
+        //IReader reader;
+        //reader.Load(stor, path);
     }
 
-    void newLine() {
-        stor.startNewLine();
-        printf("> new line is started\n");
-
-        Command com{};
-        com.command = 2;
-
-        commandStack.push(com);
-    }
+    //void newLine()
 
     void replace() {
         
@@ -972,6 +956,11 @@ public:
         else {
             std::cout << "> invalid mode" << std::endl;
         }
+
+        stor.clear();
+
+        IReader* reader = new Reader();
+        reader->Load(stor, inputFile);
     }
 
     void undo() {
@@ -1048,7 +1037,7 @@ int main()
             break;
 
         case 2:
-            text_editor.newLine();
+            //text_editor.newLine();
             break;
 
         case 3:
@@ -1056,7 +1045,7 @@ int main()
             break;
 
         case 4:
-            text_editor.load();
+            //text_editor.load();
             text_editor.commandStack.empty();
             break;
 
