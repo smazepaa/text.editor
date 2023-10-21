@@ -56,6 +56,7 @@ class LinkedList
 {
 public:
     Node* head;
+    Encryptor encryptor{};
 
     LinkedList() : head(nullptr) {}
 
@@ -103,8 +104,6 @@ public:
         }
         return *this; // by convention, always return *this
     }
-
-
 
     void addLine(const char* l)
     {
@@ -550,6 +549,14 @@ public:
         }
     }
 
+    void encrypt(int key) {
+        Node* current = head;
+        while (current != nullptr) {
+            encryptor.encrypt(current->line, key, current->length);
+            current = current->next;
+        }
+    }
+
 };
 
 class FileStruct
@@ -905,6 +912,13 @@ public:
         current->line[newLength] = '\0';
     }
 
+    void encrypt() {
+        int key;
+        std::cout << "> enter a key: ";
+        std::cin >> key;       
+        stor.encrypt(key);
+    }
+
     void undo() {
 
         Command comToUndo{};
@@ -952,25 +966,6 @@ public:
     void redo() {
         stor = originalList;
         printf("> redo completed");
-    }
-
-    void encrypt() {
-        char str[80];
-        while (getchar() != '\n');
-        printf("> enter text to append (maximum 79 symbols): ");
-        fgets(str, sizeof(str), stdin);
-
-        size_t length = strlen(str); // getting the length of the string
-        if (length > 0 && str[length - 1] == '\n') {
-            // remove the newline character
-            str[length - 1] = '\0';
-        }
-
-        string filePath;
-        std::cout << "> enter path to file for encryption: ";
-        std::getline(std::cin, filePath);
-
-
     }
 };
 
@@ -1060,6 +1055,10 @@ int main()
 
         case 17:
             text_editor.getCursor();
+            break;
+
+        case 18:
+            text_editor.encrypt();
             break;
 
         default:
