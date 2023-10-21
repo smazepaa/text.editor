@@ -1,8 +1,8 @@
 #define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "program.h"
+#include <iostream>
+#include <string>
+#include <cstring>
+#include <windows.h>
 #include <stack>
 
 using namespace std;
@@ -27,6 +27,29 @@ class Command
 public:
     int command, length, line, symbol;
     char* text;
+};
+
+class Encryptor {
+    typedef char* (*encrypt_ptr)(char*, int, int);
+    typedef char* (*decrypt_ptr)(char*, int, int);
+
+public:
+    encrypt_ptr encrypt;
+    decrypt_ptr decrypt;
+
+    Encryptor() {
+        HINSTANCE handle = LoadLibrary(TEXT("encryption.dll"));
+        DWORD err = GetLastError();
+        if (handle == nullptr || handle == INVALID_HANDLE_VALUE)
+        {
+            std::cout << "Lib not found" << std::endl;
+            exit(-1);
+        }
+
+        encrypt = (encrypt_ptr)GetProcAddress(handle, "encrypt");
+        decrypt = (decrypt_ptr)GetProcAddress(handle, "decrypt");
+
+    }
 };
 
 class LinkedList
@@ -566,20 +589,34 @@ public:
             while (fgets(line, sizeof(line), file) != nullptr) {
                 size_t length = strlen(line);
 
-                stor.addLine(line);
-            }
+                // If the last character is not a newline, keep reading
+                while (length > 0 && line[length - 1] != '\n' && fgets(line + length, sizeof(line) - length, file) != nullptr) {
+                    length = strlen(line);
+                }
 
-            size_t lastLineLength = strlen(line);
-            if (lastLineLength == sizeof(line) - 1 && line[lastLineLength] != '\0') {
-                line[lastLineLength] = '\0';
                 stor.addLine(line);
             }
 
             fclose(file);
             printf("> Text has been successfully loaded from %s\n", filename);
         }
+
     }
 
+};
+
+class IReader
+{
+public:
+    virtual ~IReader() {}
+    virtual void Run() = 0;
+};
+
+class Reader : public IReader
+{
+    virtual void Load(LinkedList stor) {
+
+    }
 };
 
 class TextEditor
@@ -590,7 +627,7 @@ public:
     char buffer[80];
     Cursor cursor{};
     stack<Command> commandStack;
-
+    Encryptor encryptor{};
 
     void commands() {
         printf("\nList of commands\n");
@@ -610,7 +647,9 @@ public:
         printf("14 - undo\n");
         printf("15 - redo\n");
         printf("16 - set cursor\n");
-        printf("17 - print cursor position");
+        printf("17 - print cursor position\n");
+        printf("18 - encrypt\n");
+        printf("19 - decrypt\n");
     }
 
     void clear() {
@@ -871,7 +910,7 @@ public:
         Command comToUndo{};
         originalList = stor;
 
-        Command comToUndo = commandStack.top();
+        comToUndo = commandStack.top();
         commandStack.pop();
 
         switch (comToUndo.command)
@@ -915,10 +954,29 @@ public:
         printf("> redo completed");
     }
 
+    void encrypt() {
+        char str[80];
+        while (getchar() != '\n');
+        printf("> enter text to append (maximum 79 symbols): ");
+        fgets(str, sizeof(str), stdin);
+
+        size_t length = strlen(str); // getting the length of the string
+        if (length > 0 && str[length - 1] == '\n') {
+            // remove the newline character
+            str[length - 1] = '\0';
+        }
+
+        string filePath;
+        std::cout << "> enter path to file for encryption: ";
+        std::getline(std::cin, filePath);
+
+
+    }
 };
 
-void main()
+int main()
 {
+
     int command;
     int counter = 0;
     TextEditor text_editor{};
@@ -929,7 +987,6 @@ void main()
         printf("\n*if you need help with the commands - enter 0*\n");
         printf("> ");
         scanf_s("%d", &command);
-
 
         switch (command) {
         case 0:
@@ -1011,4 +1068,5 @@ void main()
 
         }
     }
+    return 0;
 }
