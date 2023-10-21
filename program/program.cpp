@@ -567,31 +567,6 @@ public:
     }
 };
 
-class FileStruct
-{
-public:
-    char filename[80];
-
-    void save(LinkedList stor)
-    {
-        char* text = stor.stringPrint();
-
-        FILE* file;
-        file = fopen(filename, "w");
-
-        if (file != nullptr) {
-            fputs(text, file);
-            fclose(file);
-            printf("> text has been successfully saved to %s\n", filename);
-        }
-        else {
-            printf("> failed to open the file\n");
-        }
-        free(text);
-    }
-
-};
-
 class Random {
 public:
     int GetRandomNumber() {
@@ -632,7 +607,7 @@ public:
         file = fopen(filen, "r");
 
         if (file == nullptr) {
-            printf("> Error opening file\n");
+            std::cout << "> Error opening file" << std::endl;
         }
         else {
             while (fgets(line, sizeof(line), file) != nullptr) {
@@ -644,11 +619,42 @@ public:
                 }
 
                 stor.addLine(line);
+                
             }
 
             fclose(file);
             std::cout << "> Text has been successfully loaded from " << filename << std::endl;
         }
+    }
+};
+
+class IWriter
+{
+public:
+    virtual ~IWriter() {}
+    virtual void Save(LinkedList& stor, string filename) = 0;
+};
+
+class Writer : public IWriter
+{
+public:
+    virtual void Save(LinkedList& stor, string filename) {
+        char* text = stor.stringPrint();
+        char* filen = new char[filename.length() + 1];
+        std::strcpy(filen, filename.c_str());
+
+        FILE* file;
+        file = fopen(filen, "w");
+
+        if (file != nullptr) {
+            fputs(text, file);
+            fclose(file);
+            std::cout << "> Text has been successfully saved to " << filename << std::endl;
+        }
+        else {
+            std::cout << "> Error opening file" << std::endl;
+        }
+        free(text);
     }
 };
 
@@ -661,7 +667,6 @@ public:
     Cursor cursor{};
     stack<Command> commandStack;
     Encryptor encryptor{};
-    IReader* reader = new Reader();
 
     void commands() {
         printf("\nList of commands\n");
@@ -755,13 +760,12 @@ public:
     }
 
     void save() {
-        char filename[80];
-        printf("> enter the file name for saving:");
-        scanf("%s", filename);
-
-        FileStruct the_file{};
-        strcpy(the_file.filename, filename);
-        the_file.save(stor);
+        std::string outputFile;
+        std::cout << "> enter path to the output file: ";
+        std::cin >> outputFile;
+        IWriter* writer = new Writer();
+        writer->Save(stor, outputFile);
+        delete(writer);
     }
 
     void load() {
@@ -770,11 +774,14 @@ public:
         std::string inputFile;
         std::cout << "> enter path to the input file: ";
         std::cin >> inputFile;
+        IReader* reader = new Reader();
         reader->Load(stor, inputFile);
+        delete(reader);
     }
 
     void newLine() {
         stor.startNewLine();
+        while (getchar() != '\n');
         printf("> new line is started\n");
 
         Command com{};
@@ -970,7 +977,9 @@ public:
 
         stor.clear();
 
+        IReader* reader = new Reader();
         reader->Load(stor, inputFile);
+        delete(reader);
     }
 
     void undo() {
