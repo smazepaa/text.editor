@@ -646,7 +646,6 @@ class Writer : public IWriter
 {
 public:
     virtual void Save(LinkedList& stor, string filename) {
-        char* text = stor.stringPrint();
         char* filen = new char[filename.length() + 1];
         std::strcpy(filen, filename.c_str());
 
@@ -654,15 +653,23 @@ public:
         file = fopen(filen, "w");
 
         if (file != nullptr) {
-            fputs(text, file);
+            Node* current = stor.head;
+            while (current != nullptr) {
+                fputs(current->line, file);
+                if (current->next != nullptr) {
+                    fputc('\n', file);
+                }
+                current = current->next;
+            }
+
             fclose(file);
             std::cout << "> Text has been successfully saved to " << filename << std::endl;
         }
         else {
             std::cout << "> Error opening file" << std::endl;
         }
-        free(text);
     }
+
 };
 
 class TextEditor
