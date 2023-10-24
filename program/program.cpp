@@ -4,6 +4,8 @@
 #include <cstring>
 #include <windows.h>
 #include <stack>
+#include <fstream>
+#include <vector>
 #include <random>
 
 using namespace std;
@@ -40,7 +42,6 @@ public:
 
     Encryptor() {
         HINSTANCE handle = LoadLibrary(TEXT("encryption.dll"));
-        DWORD err = GetLastError();
         if (handle == nullptr || handle == INVALID_HANDLE_VALUE)
         {
             std::cout << "Lib not found" << std::endl;
@@ -600,26 +601,32 @@ class Reader : public IReader
 public:
     virtual void Load(LinkedList& stor, string filename) {
         FILE* file;
-        char line[80];
+        char chunk[80];
         char* filen = new char[filename.length() + 1];
         std::strcpy(filen, filename.c_str());
 
-        file = fopen(filen, "r");
+        file = fopen(filen, "rb");
 
         if (file == nullptr) {
-            std::cout << "> Error opening file" << std::endl;
+            printf("> Error opening file\n");
         }
         else {
-            while (fgets(line, sizeof(line), file) != nullptr) {
-                size_t length = strlen(line);
+            size_t bytesRead;
+            while ((bytesRead = fread(chunk, sizeof(char), 79, file)) > 0) {
+                size_t startLine = 0;
 
-                // If the last character is not a newline, keep reading
-                while (length > 0 && line[length - 1] != '\n' && fgets(line + length, sizeof(line) - length, file) != nullptr) {
-                    length = strlen(line);
+                for (size_t i = 0; i < bytesRead; ++i) {
+                    if (chunk[i] == '\n') {
+                        chunk[i] = '\0';
+                        stor.addLine(&chunk[startLine]);
+                        stor.startNewLine();
+                        startLine = i + 1;
+                    }
                 }
-
-                stor.addLine(line);
-                
+                if (startLine < bytesRead) {
+                    chunk[bytesRead] = '\0';
+                    stor.addLine(&chunk[startLine]);
+                }
             }
 
             fclose(file);
